@@ -1,3 +1,28 @@
+;;; mini-header-line.el --- A minimal header-line instead of a convoluted mode-line
+
+;; Author: Johannes Goslar
+;; Created: 24 Mai 2016
+;; Version: 0.1.0
+;; Keywords: header-line, mode-line
+;; URL: https://github.com/ksjogo/mini-header-line
+
+;; Copyright (C) 2016 Johannes Goslar
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;;;; Code:
+
 (require 'face-remap)
 
 (defvar mini-header-line:background "#292929")
@@ -31,7 +56,7 @@
               (propertize (number-to-string warnings) 'face 'font-lock-warning-face)
             "0")))
 
-(defvar jg-header-line-format
+(defvar mini-header-line-format
   (list
    " "
    ;; buffer
@@ -70,7 +95,7 @@
   (interactive)
   (when (or (derived-mode-p 'prog-mode)
             (member major-mode '(jape-mode groovy-mode markdown-mode latex-mode scss-mode org-mode css-mode feature-mode enh-ruby-mode html-mode web-mode nxml-mode json-mode)))
-    (setq header-line-format jg-header-line-format)))
+    (setq header-line-format mini-header-line-format)))
 
 (define-globalized-minor-mode mini-header-line-mode mini-header-line-minor-mode mini-header-line-mode-on)
 
