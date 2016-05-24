@@ -122,3 +122,4 @@
   (add-hook 'focus-out-hook (lambda () (mini-header-line:app-focus nil))))
 
 (provide 'mini-header-line)
+;;; mini-header-line.el ends here
