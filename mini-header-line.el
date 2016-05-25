@@ -3,6 +3,7 @@
 ;; Author: Johannes Goslar
 ;; Created: 24 Mai 2016
 ;; Version: 0.1.0
+;; Package-Requires: ((emacs "24.4"))
 ;; Keywords: header-line, mode-line
 ;; URL: https://github.com/ksjogo/mini-header-line
 
@@ -25,36 +26,95 @@
 
 (require 'face-remap)
 
-(defvar mini-header-line:background "#292929")
+(defgroup mini-header-line nil
+  " minimal header line")
 
-(defvar mini-header-line:last-buffer nil)
-(defvar mini-header-line:cookie nil)
-(defvar mini-header-line:app-has-focus t)
+(defcustom mini-header-line-error-reports
+  '(mini-header-line-error-js2 mini-header-line-error-flycheck)
+  "The list of error reporters, shall return (errors warnings)."
+  :group 'mini-header-line
+  :type '(repeat function))
 
-(defun mini-header-line:check ()
+(defface mini-header-line-active
+  '((default :background "#292929"))
+  "Additional properties used for the active mini-header-line ")
+
+(defvar mini-header-line-saved-mode-line nil)
+
+(defvar mini-header-line-last-buffer nil)
+(defvar mini-header-line-cookie nil)
+(defvar mini-header-line-app-has-focus t)
+
+(defun mini-header-line-check ()
   "Check if focus has changed, and if so, update remapping."
-  (let ((current-buffer (and mini-header-line:app-has-focus (current-buffer))))
-    (unless (eq mini-header-line:last-buffer current-buffer)
-      (when (and mini-header-line:last-buffer mini-header-line:cookie)
-        (with-current-buffer mini-header-line:last-buffer
-          (face-remap-remove-relative mini-header-line:cookie)))
-      (setq mini-header-line:last-buffer current-buffer)
+  (let ((current-buffer (and mini-header-line-app-has-focus (current-buffer))))
+    (unless (eq mini-header-line-last-buffer current-buffer)
+      (when (and mini-header-line-last-buffer mini-header-line-cookie)
+        (when (buffer-live-p mini-header-line-last-buffer)
+          (with-current-buffer mini-header-line-last-buffer
+            (face-remap-remove-relative mini-header-line-cookie))))
+      (setq mini-header-line-last-buffer current-buffer)
       (when current-buffer
-        (setq mini-header-line:cookie
-              (face-remap-add-relative 'header-line :background mini-header-line:background))))))
+        (setq mini-header-line-cookie
+              (face-remap-add-relative 'header-line :inherit 'mini-header-line-active))))))
 
-(defun mini-header-line:app-focus (state)
-  (setq mini-header-line:app-has-focus state)
-  (mini-header-line:check))
+(defun mini-header-line-app-focus (state)
+  (setq mini-header-line-app-has-focus state)
+  (mini-header-line-check))
 
-(defun mini-header-line-formatter (errors warnings)
-  (concat (if (> errors 0)
-              (propertize (number-to-string errors) 'face 'error)
-            "0")
-          "/"
-          (if (> warnings 0)
-              (propertize (number-to-string warnings) 'face 'font-lock-warning-face)
-            "0")))
+(defun mini-header-line-app-focus-in ()
+  (mini-header-line-app-focus t))
+
+(defun mini-header-line-app-focus-out ()
+  (mini-header-line-app-focus nil))
+
+(defadvice other-window (after mini-header-line)
+  (mini-header-line-check))
+
+(defadvice select-window (after mini-header-line)
+  (mini-header-line-check))
+
+(defun mini-header-line-error-format (errs)
+  (let ((errors (car errs))
+        (warnings (cadr errs)))
+    (if (and errors warnings)
+        (concat
+         (if (numberp errors)
+             (if
+                 (> errors 0)
+                 (propertize (number-to-string errors) 'face 'error)
+               "0")
+           errors)
+         "/"
+         (if (numberp warnings)
+             (if (> warnings 0)
+                 (propertize (number-to-string warnings) 'face 'font-lock-warning-face)
+               "0")
+           warnings))
+      "")))
+
+(defun mini-header-line-error-js2 ()
+  (if (eq major-mode 'js2-mode)
+      (list (length (js2-errors)) (length (js2-warnings)))
+    '(nil nil)))
+
+(defun mini-header-line-error-flycheck ()
+  (if (bound-and-true-p flycheck-mode)
+      (pcase flycheck-last-status-change
+        (`not-checked '(nil nil))
+        (`no-checker '("-" "-"))
+        (`running(defface company-tooltip-common-selection
+                   '((default :inherit company-tooltip-common))
+                   "Face used for the selected common completion in the tooltip.") '("*" "*"))
+        (`errored '("!" "!"))
+        (`interrupted '("-" "-"))
+        (`suspicious apples'("?" "?"))
+        (`finished
+         (if flycheck-current-errors
+             (let ((error-counts (flycheck-count-errors flycheck-current-errors)))
+               (list (or (cdr (assq 'error error-counts)) 0) (or (cdr (assq 'warning error-counts)) 0)))
+           '(0 0))))
+    '(nil nil)))
 
 (defvar mini-header-line-format
   (list
@@ -65,21 +125,9 @@
    (propertize "%*" 'face 'font-lock-warning-face)
    " "
    ;; error counts
-   '(:eval (when (and (boundp 'flycheck-mode) flycheck-mode)
-             (pcase flycheck-last-status-change
-               (`not-checked "")
-               (`no-checker "-/-")
-               (`running "*/*")
-               (`errored "!/!")
-               (`interrupted "-/-")
-               (`suspicious "?/?")
-               (`finished
-                (if flycheck-current-errors
-                    (let ((error-counts (flycheck-count-errors flycheck-current-errors)))
-                      (mini-header-line-formatter (or (cdr (assq 'error error-counts)) 0) (or (cdr (assq 'warning error-counts)) 0)))
-                  "0/0")))))
-   '(:eval (when (and (eq major-mode 'js2-mode))
-             (mini-header-line-formatter (length (js2-errors)) (length (js2-warnings)))))
+   '(:eval (apply 'concat (cl-map 'list (lambda (func)
+                                          (mini-header-line-error-format (funcall func))) mini-header-line-error-reports)))
+
    ;; line
    (propertize "%4l" 'face 'font-lock-type-face)
    " "
@@ -91,35 +139,35 @@
    ))
 
 (define-minor-mode mini-header-line-minor-mode "")
-(defun mini-header-line-mode-on (&optional param)
+(defun mini-header-line-minor-mode-on (&optional param)
   (interactive)
-  (when (or (derived-mode-p 'prog-mode)
-            (member major-mode '(jape-mode groovy-mode markdown-mode latex-mode scss-mode org-mode css-mode feature-mode enh-ruby-mode html-mode web-mode nxml-mode json-mode)))
+  (when (buffer-file-name)
     (setq header-line-format mini-header-line-format)))
 
-(define-globalized-minor-mode mini-header-line-mode mini-header-line-minor-mode mini-header-line-mode-on)
-
 ;;;###autoload
-(defun mini-header-line-on ()
-  (interactive)
+(define-globalized-minor-mode global-mini-header-line-mode mini-header-line-minor-mode mini-header-line-minor-mode-on
+  :group 'mini-header-line)
 
-  (setq-default mode-line-format nil)
-
-  (mini-header-line-mode)
-
-  (defadvice other-window (after mini-header-line activate)
-    (mini-header-line:check))
-  (defadvice select-window (after mini-header-line activate)
-    (mini-header-line:check))
-
-  ;; 25.1 error?
-  ;;(defadvice select-frame (after mini-header-line activate)
-  ;;  (mini-header-line:check))
-
-  (add-hook 'window-configuration-change-hook 'mini-header-line:check)
-
-  (add-hook 'focus-in-hook (lambda () (mini-header-line:app-focus t)))
-  (add-hook 'focus-out-hook (lambda () (mini-header-line:app-focus nil))))
+(add-hook 'global-mini-header-line-mode-hook
+          (lambda ()
+            (if global-mini-header-line-mode
+                (progn
+                  (setq mini-header-line-saved-mode-line mode-line-format)
+                  (setq-default mode-line-format nil)
+                  (ad-activate 'other-window)
+                  (ad-activate 'select-window)
+                  (add-hook 'window-configuration-change-hook 'mini-header-line-check)
+                  (add-hook 'focus-in-hook 'mini-header-line-app-focus-in)
+                  (add-hook 'focus-out-hook 'mini-header-line-app-focus-out))
+              (progn
+                (setq-default mode-line-format mini-header-line-saved-mode-line)
+                (setq mini-header-line-saved-mode-line nil)
+                (ad-deactivate 'other-window)
+                (ad-deactivate 'select-window)
+                (remove-hook 'window-configuration-change-hook 'mini-header-line-check)
+                (remove-hook 'focus-in-hook 'mini-header-line-app-focus-in)
+                (remove-hook 'focus-out-hook 'mini-header-line-app-focus-out)
+                ))))
 
 (provide 'mini-header-line)
 ;;; mini-header-line.el ends here
