@@ -69,9 +69,6 @@
 (defun mini-header-line-app-focus-out ()
   (mini-header-line-app-focus nil))
 
-(defadvice other-window (after mini-header-line)
-  (mini-header-line-check))
-
 (defadvice select-window (after mini-header-line)
   (mini-header-line-check))
 
@@ -104,12 +101,10 @@
       (pcase flycheck-last-status-change
         (`not-checked '(nil nil))
         (`no-checker '("-" "-"))
-        (`running(defface company-tooltip-common-selection
-                   '((default :inherit company-tooltip-common))
-                   "Face used for the selected common completion in the tooltip.") '("*" "*"))
+        (`running '("*" "*"))
         (`errored '("!" "!"))
         (`interrupted '("-" "-"))
-        (`suspicious apples'("?" "?"))
+        (`suspicious '("?" "?"))
         (`finished
          (if flycheck-current-errors
              (let ((error-counts (flycheck-count-errors flycheck-current-errors)))
@@ -155,7 +150,6 @@
                 (progn
                   (setq mini-header-line-saved-mode-line mode-line-format)
                   (setq-default mode-line-format nil)
-                  (ad-activate 'other-window)
                   (ad-activate 'select-window)
                   (add-hook 'window-configuration-change-hook 'mini-header-line-check)
                   (add-hook 'focus-in-hook 'mini-header-line-app-focus-in)
@@ -163,7 +157,6 @@
               (progn
                 (setq-default mode-line-format mini-header-line-saved-mode-line)
                 (setq mini-header-line-saved-mode-line nil)
-                (ad-deactivate 'other-window)
                 (ad-deactivate 'select-window)
                 (remove-hook 'window-configuration-change-hook 'mini-header-line-check)
                 (remove-hook 'focus-in-hook 'mini-header-line-app-focus-in)
