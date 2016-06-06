@@ -27,7 +27,8 @@
 (require 'face-remap)
 
 (defgroup mini-header-line nil
-  " minimal header line")
+  "A minimal header line."
+  :group 'environment)
 
 (defcustom mini-header-line-error-reports
   '(mini-header-line-error-js2 mini-header-line-error-flycheck)
