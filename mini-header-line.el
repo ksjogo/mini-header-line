@@ -37,7 +37,7 @@
   :type '(repeat function))
 
 (defface mini-header-line-active
-  '((default :background "#292929"))
+  '((default :weight bold))
   "Additional properties used for the active mini-header-line ")
 
 (defvar mini-header-line-saved-mode-line nil)
@@ -134,34 +134,28 @@
    " "
    ))
 
-(define-minor-mode mini-header-line-minor-mode "")
-(defun mini-header-line-minor-mode-on (&optional param)
-  (interactive)
-  (when (buffer-file-name)
-    (setq header-line-format mini-header-line-format)))
+(defun mini-header-line-set-header-line ()
+  (setq header-line-format mini-header-line-format))
 
 ;;;###autoload
-(define-globalized-minor-mode global-mini-header-line-mode mini-header-line-minor-mode mini-header-line-minor-mode-on
-  :group 'mini-header-line)
-
-(add-hook 'global-mini-header-line-mode-hook
-          (lambda ()
-            (if global-mini-header-line-mode
-                (progn
-                  (setq mini-header-line-saved-mode-line mode-line-format)
-                  (setq-default mode-line-format nil)
-                  (ad-activate 'select-window)
-                  (add-hook 'window-configuration-change-hook 'mini-header-line-check)
-                  (add-hook 'focus-in-hook 'mini-header-line-app-focus-in)
-                  (add-hook 'focus-out-hook 'mini-header-line-app-focus-out))
-              (progn
-                (setq-default mode-line-format mini-header-line-saved-mode-line)
-                (setq mini-header-line-saved-mode-line nil)
-                (ad-deactivate 'select-window)
-                (remove-hook 'window-configuration-change-hook 'mini-header-line-check)
-                (remove-hook 'focus-in-hook 'mini-header-line-app-focus-in)
-                (remove-hook 'focus-out-hook 'mini-header-line-app-focus-out)
-                ))))
+(define-minor-mode mini-header-line-mode "" :global t
+  (if mini-header-line-mode
+      (progn
+        (setq mini-header-line-saved-mode-line mode-line-format)
+        (setq-default mode-line-format nil)
+        (ad-activate 'select-window)
+        (add-hook 'find-file-hook 'mini-header-line-set-header-line)
+        (add-hook 'window-configuration-change-hook 'mini-header-line-check)
+        (add-hook 'focus-in-hook 'mini-header-line-app-focus-in)
+        (add-hook 'focus-out-hook 'mini-header-line-app-focus-out))
+    (progn
+      (setq-default mode-line-format mini-header-line-saved-mode-line)
+      (setq mini-header-line-saved-mode-line nil)
+      (ad-deactivate 'select-window)
+      (remove-hook 'find-file-hook 'mini-header-line-set-header-line)
+      (remove-hook 'window-configuration-change-hook 'mini-header-line-check)
+      (remove-hook 'focus-in-hook 'mini-header-line-app-focus-in)
+      (remove-hook 'focus-out-hook 'mini-header-line-app-focus-out))))
 
 (provide 'mini-header-line)
 ;;; mini-header-line.el ends here
