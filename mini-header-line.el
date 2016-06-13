@@ -1,4 +1,4 @@
-;;; mini-header-line.el --- A minimal header-line instead of a convoluted mode-line
+;;; mini-header-line.el --- a minimal header-line
 
 ;; Author: Johannes Goslar
 ;; Created: 24 Mai 2016
