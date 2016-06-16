@@ -143,7 +143,8 @@
       (progn
         (setq mini-header-line-saved-mode-line mode-line-format)
         (setq-default mode-line-format nil)
-        (ad-activate 'select-window)
+        (ad-enable-advice 'select-window 'after 'mini-header-line)
+        (ad-update 'select-window)
         (add-hook 'find-file-hook 'mini-header-line-set-header-line)
         (add-hook 'window-configuration-change-hook 'mini-header-line-check)
         (add-hook 'focus-in-hook 'mini-header-line-app-focus-in)
@@ -151,7 +152,8 @@
     (progn
       (setq-default mode-line-format mini-header-line-saved-mode-line)
       (setq mini-header-line-saved-mode-line nil)
-      (ad-deactivate 'select-window)
+      (ad-disable-advice 'select-window 'after 'mini-header-line)
+      (ad-update 'select-window)
       (remove-hook 'find-file-hook 'mini-header-line-set-header-line)
       (remove-hook 'window-configuration-change-hook 'mini-header-line-check)
       (remove-hook 'focus-in-hook 'mini-header-line-app-focus-in)
