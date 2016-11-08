@@ -125,7 +125,7 @@
                                           (mini-header-line-error-format (funcall func))) mini-header-line-error-reports)))
 
    ;; line
-   (propertize "%4l" 'face 'font-lock-type-face)
+   (propertize "%4l" 'face 'font-lock-variable-name-face)
    " "
    ;; relative position, size of file
    `((-3 ,(propertize "%P" 'face 'font-lock-constant-face)))
