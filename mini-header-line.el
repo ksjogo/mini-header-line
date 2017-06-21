@@ -134,8 +134,12 @@
    " "
    ))
 
+(defcustom mini-header-line-excluded-modes '(ranger-mode)
+  "Modes to not set the header-line format in.")
+
 (defun mini-header-line-set-header-line ()
-  (setq header-line-format mini-header-line-format))
+  (unless (member major-mode mini-header-line-excluded-modes)
+    (setq header-line-format mini-header-line-format)))
 
 ;;;###autoload
 (define-minor-mode mini-header-line-mode "" :global t
